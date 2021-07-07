@@ -1,0 +1,25 @@
+{
+    "id": "903067AF",
+    "path": "~/Documents/GitHub/Historical poverty estimates – Roser and Hasell (2021) /Scripts/Prepare GDP per capita and population data.R",
+    "project_path": "Scripts/Prepare GDP per capita and population data.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1624659775114.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "24,0",
+        "scrollLine": "16"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1623285814,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1623285814,
+    "read_only": false,
+    "read_only_alternatives": []
+}

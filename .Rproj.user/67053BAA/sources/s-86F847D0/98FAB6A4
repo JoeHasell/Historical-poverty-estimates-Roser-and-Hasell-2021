@@ -1,0 +1,25 @@
+{
+    "id": "98FAB6A4",
+    "path": "~/Documents/GitHub/Historical poverty estimates – Roser and Hasell (2021) /Scripts/Estimate poverty counts.R",
+    "project_path": "Scripts/Estimate poverty counts.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1624284062559.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "134,8",
+        "scrollLine": "123"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1625517361,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1625517361332,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,25 @@
+{
+    "id": "690FF021",
+    "path": "~/Documents/GitHub/Historical poverty estimates – Roser and Hasell (2021) /Scripts/Prepare files for upload to Our World in Data.R",
+    "project_path": "Scripts/Prepare files for upload to Our World in Data.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1624283136221.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "335,21",
+        "scrollLine": "327"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1625568305,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1625568305304,
+    "read_only": false,
+    "read_only_alternatives": []
+}

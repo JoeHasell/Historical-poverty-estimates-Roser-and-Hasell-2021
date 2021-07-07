@@ -1,0 +1,345 @@
+library(tidyverse)
+
+# Country, regionand world poverty estiamtes under different scenarios and source data
+load("Manipulated data/Poverty estimates under different scenarios (country, world and region data stored separately in list).Rda")
+
+# Fully interpolated/extrapolated GDP per capita and population data plus source info
+load("Manipulated data/GDP_pop_bm_years.Rda")
+
+# Fully interpolated/extrapolated gini data plus source info
+load("Manipulated data/gini_bm_years.Rda")
+
+# WORLD NUMBER BELOW DIFFERNET THRESHOLDS ------
+
+# Set thresholds 
+# (these must be selected from the range of thresholds
+# for which poverty rates have been calculated earlier in the script
+# chain. See 'Estimate poverty counts.R')
+
+
+thresholds<- c(5, 2, 10, 20)
+
+# grab world data from list and filter for baseline scenario
+
+df_world_pov_estimates<- unpacked_pov_estiamtes_under_different_scenarios[["world"]] %>%
+  filter(gini_source == "baseline_GCIP_income_vZ",
+         gini_multiplier == 1,
+         GDP_multiplier ==  1,
+         poverty_threshold %in% thresholds)
+
+
+# calculate number of poor under thresholds from poverty rates and total pop
+
+df_world_pov_estimates<- df_world_pov_estimates %>%
+  mutate(number_below = (poverty_rate/100) * Population) %>%
+  select(Benchmark_year, poverty_threshold, number_below, Population)
+
+# Calculate numbers of people between thresholds -----
+
+
+
+# spread to wide format
+df_world_pov_estimates<- df_world_pov_estimates %>%
+  mutate(poverty_threshold = paste0("Number_under_", poverty_threshold)) %>%
+  spread(poverty_threshold, number_below)
+
+# For the highest poverty line, calculate the number above line as 
+# world population less population under line
+
+  # sort thresholds
+thresholds<- sort(thresholds, decreasing = TRUE)
+varname<- paste0("Number_under_", thresholds[1])
+
+df_world_pov_estimates<- df_world_pov_estimates %>%
+  mutate(!!paste0("Number_above_", thresholds[1]) := Population - !!as.name(varname) )
+
+# go through the poverty lines from highest to lowest and calculate number
+# between thresholds
+
+counter<- 0
+for(i in 1:(length(thresholds)-1)){
+  
+  higher_varname<- paste0("Number_under_", thresholds[i])
+  lower_varname<- paste0("Number_under_", thresholds[i+1]) 
+  
+  df_world_pov_estimates<- df_world_pov_estimates %>%
+    mutate(!!paste0(
+      "Number_between_",thresholds[i], "_and_", thresholds[i+1]
+    ) := !!as.name(higher_varname) - !!as.name(lower_varname)   )
+  
+}
+
+# Drop world population column 
+df_world_pov_estimates<- df_world_pov_estimates %>%
+  select(-Population)
+
+
+# Adjust to OWID format
+
+df_world_pov_estimates<- df_world_pov_estimates %>%
+  mutate(Entity = "World") %>%
+  rename(Year = Benchmark_year) %>%
+  select(Entity, Year, everything()) %>%
+  mutate_if(is.numeric, as.character)
+
+
+# Export as csv -----
+
+fp<- "Outputs/Upload files for Our World in Data/"
+
+write.csv(df_world_pov_estimates,
+          paste0(fp, 
+                 "Historical estimates of number of people living in different income thresholds globally.csv"),
+          row.names = FALSE)
+
+# REGION POVERTY RATE, VARIOUS pov LINES ----
+
+
+# Set thresholds 
+# (these must be selected from the range of thresholds
+# for which poverty rates have been calculated earlier in the script
+# chain. See 'Estimate poverty counts.R')
+
+thresholds<- c(5, 2, 10, 20)
+thresholds<- sort(thresholds)
+
+# grab world data from list and filter for baseline scenario
+
+df_region_pov_estimates<- unpacked_pov_estiamtes_under_different_scenarios[["regions"]] %>%
+  filter(gini_source == "baseline_GCIP_income_vZ",
+         gini_multiplier == 1,
+         GDP_multiplier ==  1,
+         poverty_threshold %in% thresholds)
+
+
+# Add back in aggregate regional figures for South Asia and East Asia and Pacific regions
+# (Earlier in the pipeline, China and India were separated out)
+
+# pov rate calculated as pop-weighted mean, number of poor and poor share 
+# in world population calcaulted as the sum
+agg_SA_pov_rate<- df_region_pov_estimates %>%
+  filter(Region %in% c("India", "SA excl. India")) %>%
+  group_by(Benchmark_year, poverty_threshold) %>%
+  summarise(regional_pov_rate = weighted.mean(regional_pov_rate, regional_population),
+            number_in_poverty = sum(number_in_poverty),
+            poor_share_in_world_pop = sum(poor_share_in_world_pop)) %>%
+  mutate(Region = "SA")
+
+
+agg_EAP_pov_rate<- df_region_pov_estimates %>%
+  filter(Region %in% c("China", "EAP excl. China")) %>%
+  group_by(Benchmark_year, poverty_threshold) %>%
+  summarise(regional_pov_rate = weighted.mean(regional_pov_rate, regional_population),
+            number_in_poverty = sum(number_in_poverty),
+            poor_share_in_world_pop = sum(poor_share_in_world_pop)) %>%
+  mutate(Region = "EAP")
+
+# append aggregate SA and EAP figures to main df
+
+df_region_pov_estimates<- bind_rows(df_region_pov_estimates, agg_SA_pov_rate)
+df_region_pov_estimates<- bind_rows(df_region_pov_estimates, agg_EAP_pov_rate)
+
+
+
+# spread to wide format (var per threshold)
+df_region_pov_estimates<-  df_region_pov_estimates %>%
+  select(-c(World_population, regional_population)) %>%
+  rename(pov_rate = regional_pov_rate) %>%
+  pivot_wider(names_from = poverty_threshold, 
+              values_from = c("pov_rate", 
+                              "number_in_poverty", 
+                              "poor_share_in_world_pop"))
+
+# replace region abbreviations with full names
+region_name_mapping <- data.frame("Region" = c("SA",
+                                               "India",
+                                               "SA excl. India",
+                                               "EAP",
+                                               "China",
+                                               "EAP excl. China",
+                                               "Western Europe",
+                                               "EECA",
+                                               "LAC",
+                                               "MENA",
+                                               "SSA",
+                                               "WO"
+),
+"Region_long" = c("South Asia",
+                  "India",
+                  "South Asia excl. India",
+                  "East Asia and Pacific",
+                  "China",
+                  "E. Asia and Pacific excl. China",
+                  "Western Europe",
+                  "Eastern Europe and Central Asia",
+                  "Latin America and the Caribbean",
+                  "Middle East and North Africa",
+                  "Sub-Saharan Africa",
+                  "Western Offshoots"))
+
+
+df_region_pov_estimates<- left_join(df_region_pov_estimates, region_name_mapping) %>%
+  select(-c(Region, GDP_multiplier, gini_multiplier, gini_source))
+
+
+# rename variables for OWID format
+df_region_pov_estimates<- df_region_pov_estimates %>%
+  rename(Year = Benchmark_year,
+         Entity = Region_long) %>%
+  select(Entity, Year, everything()) %>%
+  mutate_if(is.numeric, as.character)
+
+# Export as csv -----
+
+fp<- "Outputs/Upload files for Our World in Data/"
+
+write.csv(df_region_pov_estimates,
+          paste0(fp, 
+                 "Historical estimates of regional poverty rates an share of world's population that are poor.csv"),
+          row.names = FALSE)
+
+
+
+# SINGLE HISTORICAL SERIES FOR EXTREME POVERTY WITH POVCAL -----
+
+
+# National accounts series ------
+
+# Extract the baseline series from the collated poverty scenarios
+
+# Set pov line
+# (this must be selected from the range of lines
+# for which poverty rates have been calculated earlier in the script
+# chain. See 'Estimate poverty counts.R')
+
+threshold<- 5.2
+
+# grab baseline series from the collated pov estimates
+NA_extreme_pov<- unpacked_pov_estiamtes_under_different_scenarios[["world"]] %>%
+  filter(gini_source == "baseline_GCIP_income_vZ",
+         gini_multiplier == 1,
+         GDP_multiplier ==  1,
+         poverty_threshold %in% threshold)
+
+
+# Keep series only up to 1980, and drop unnecessary vars
+NA_extreme_pov<- NA_extreme_pov %>%
+  filter(Benchmark_year <= 1980) %>%
+  select(Benchmark_year, poverty_rate, Population) %>%
+  rename(year = Benchmark_year)
+
+# Povcal data ------
+
+fp<- "Manipulated data/Povcal data/"
+povcal_world_190<- read.csv(paste0(fp,"region_data_1.9.csv"))
+
+povcal_world_190<- povcal_world_190 %>%
+  filter(regiontitle == "World Total") %>%
+  rename(poverty_rate = headcount) %>%
+  mutate(poverty_rate = poverty_rate * 100,#express as percent
+         population = population * 1000000) %>% #express millions as per capita
+  select(year,poverty_rate, population) %>%
+  rename(Population = population) %>%
+  filter(!is.na(poverty_rate)) # drops 2018 value which is missing for world total
+
+# append and export -----
+
+append_NA_and_Povcal<- rbind(NA_extreme_pov, povcal_world_190) %>%
+  arrange(year) %>% 
+  mutate(Entity = "World") %>%
+  mutate(number_in_extreme_poverty = Population * poverty_rate/100,
+         number_not_in_extreme_poverty = Population - number_in_extreme_poverty) %>%
+  select(Entity, year, poverty_rate,
+         number_in_extreme_poverty, number_not_in_extreme_poverty) %>%
+  mutate_if(is.numeric, as.character)
+  
+
+fp<- "Outputs/Upload files for Our World in Data/"
+
+write.csv(append_NA_and_Povcal,
+          paste0(fp, 
+                 "Reconstruction of historical global extreme poverty rates, 1820-2017.csv"),
+          row.names = FALSE)
+
+
+# COUNTRY DATA ------
+
+# Choose pov lines
+# (these must be selected from the range of lines
+# for which poverty rates have been calculated earlier in the script
+# chain. See 'Estimate poverty counts.R')
+
+threshold<- c(2,5,10,20)
+
+# grab series from the collated pov estimates
+country_pov_estimates<- unpacked_pov_estiamtes_under_different_scenarios[["countries"]] %>%
+  filter(gini_source == "baseline_GCIP_income_vZ",
+         gini_multiplier == 1,
+         GDP_multiplier ==  1,
+         poverty_threshold %in% threshold) %>%
+  select(Country, Benchmark_year, poverty_rate, poverty_threshold)
+
+# Spread to wide format -  one variable per pov line
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(poverty_threshold = paste0("Share_below_", poverty_threshold, "_a_day")) %>%
+  spread(poverty_threshold, poverty_rate)
+
+# Merge in GDP per capita, gini and source info
+country_pov_estimates<- left_join(country_pov_estimates, GDP_pop_bm_years)
+country_pov_estimates<- left_join(country_pov_estimates, gini_bm_years)
+
+
+# re-label source descriptions
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(GDP.per.capita_source = ifelse(GDP.per.capita_source=="MDP",
+                                        "Maddison - original",
+                                        GDP.per.capita_source))
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(GDP.per.capita_source = ifelse(GDP.per.capita_source=="MDP Interpolated",
+                                         "Maddison - interpolated",
+                                        GDP.per.capita_source))
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(GDP.per.capita_source = ifelse(GDP.per.capita_source=="Extrapolated with de la Ecosura",
+                                        "Extrapolated using Prados de la Ecosura (2012)",
+                                        GDP.per.capita_source))
+
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(GDP.per.capita_source = ifelse(GDP.per.capita_source=="Extrapolated using average regional growth rate",
+                                        "Maddison - extrapolated using average regional growth rate",
+                                        GDP.per.capita_source))
+
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(GDP.per.capita_source = ifelse(GDP.per.capita_source=="Extrapolated using aggregate bloc growth rate",
+                                        "Maddison - extrapolated using aggregate bloc growth rate",
+                                        GDP.per.capita_source))
+
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(baseline_GCIP_income_vZ_source = ifelse(baseline_GCIP_income_vZ_source=="GCIP_income_gini_original",
+                                        "GCIP (income) - original",
+                                        baseline_GCIP_income_vZ_source))
+
+
+country_pov_estimates<- country_pov_estimates %>%
+  mutate(baseline_GCIP_income_vZ_source = ifelse(baseline_GCIP_income_vZ_source=="vZ_gini_original",
+                                                 "van Zanden et al. (2014) - original",
+                                                 baseline_GCIP_income_vZ_source))
+
+# Save in OWID format
+
+country_pov_estimates<- country_pov_estimates %>%
+  rename(Year = Benchmark_year) %>%
+  mutate_if(is.numeric, as.character)
+
+fp<- "Outputs/Upload files for Our World in Data/"
+
+write.csv(country_pov_estimates,
+          paste0(fp, 
+                 "Reconstruction of historical poverty trends by country, 1820-2017.csv"),
+          row.names = FALSE)
+

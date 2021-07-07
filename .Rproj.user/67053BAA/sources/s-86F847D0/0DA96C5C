@@ -1,0 +1,32 @@
+{
+    "id": "0DA96C5C",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1625567305587.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "expression": "country_pov_estimates",
+        "caption": "country_pov_estimates",
+        "totalObservations": 2475,
+        "displayedObservations": 2475,
+        "variables": 18,
+        "cacheKey": "9F254E06",
+        "object": "country_pov_estimates",
+        "environment": "",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=country_pov_estimates&cache_key=9F254E06&max_cols=50",
+        "preview": 0
+    },
+    "folds": "",
+    "lastKnownWriteTime": 279,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1625567305587,
+    "read_only": false,
+    "read_only_alternatives": []
+}

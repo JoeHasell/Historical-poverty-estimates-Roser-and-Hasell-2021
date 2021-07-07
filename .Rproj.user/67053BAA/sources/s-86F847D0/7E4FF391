@@ -1,0 +1,25 @@
+{
+    "id": "7E4FF391",
+    "path": "~/Documents/GitHub/Historical poverty estimates – Roser and Hasell (2021) /Scripts/Prepare Gini data.R",
+    "project_path": "Scripts/Prepare Gini data.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1625487724374.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "299,0",
+        "scrollLine": "39"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1624660610,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1624660610,
+    "read_only": false,
+    "read_only_alternatives": []
+}
